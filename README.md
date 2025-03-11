@@ -30,7 +30,7 @@
 <img src='./assets/teaser.jpg'>
 
 
-## 📋 TODO
+## 📋 Coming Soon
 
 - [ ] Wan-VACE Model Inference
 - [ ] LTX-VACE Model Inference
