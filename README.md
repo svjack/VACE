@@ -14,7 +14,7 @@
     ·
     <strong>Yu Liu</strong>
     <br>
-    <b>Tongyi Lab - <a href="https://github.com/Wan-Video/Wan2.1"><img src='https://ali-vilab.github.io/VACE-Page/assets/logos/wan_logo.png' alt='wan_logo' style='vertical-align: bottom; margin-bottom: -4px; height: 20px;'></a> </b>
+    <b>Tongyi Lab - <a href="https://github.com/Wan-Video/Wan2.1"><img src='https://ali-vilab.github.io/VACE-Page/assets/logos/wan_logo.png' alt='wan_logo' style='margin-bottom: -4px; height: 20px;'></a> </b>
     <br>
     <br>
         <a href="https://arxiv.org/abs/2503.07598"><img src='https://img.shields.io/badge/arXiv-VACE-red' alt='Paper PDF'></a>
