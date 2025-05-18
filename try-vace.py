@@ -1252,3 +1252,159 @@ python vace/vace_wan_inference.py --size "832*480" --prompt "冬日雪后的松�
 python vace/vace_wan_inference.py --size "832*480" --prompt "雨季的江南水乡，镜头缓缓平移，细雨如丝般落下，在水面激起无数涟漪。古老的石桥倒映在水中，两岸白墙黛瓦的民居被雨水洗得发亮。柳枝轻拂水面，远处有乌篷船缓缓驶过。画面风格水墨意境，充满东方韵味。"
 python vace/vace_wan_inference.py --size "832*480" --prompt "清晨的向日葵田，镜头缓缓下降，金黄色的花朵齐刷刷地面向初升的太阳。露珠在花瓣上闪烁，微风吹过掀起层层花浪。远处地平线上朝阳刚刚升起，将天空染成橘红色。整个画面充满生机与希望。画面风格明亮欢快。"
 
+git clone https://huggingface.co/spaces/svjack/ReSize-Image-Outpainting
+
+import os
+from pathlib import Path
+from tqdm import tqdm
+from gradio_client import Client, handle_file
+from PIL import Image
+
+def process_images():
+    # 设置路径
+    input_dir = Path("Xiang_Float_After_Tomorrow_Head_SPLITED_First")
+    premask_dir = Path("Xiang_Float_After_Tomorrow_Head_SPLITED_First_PreMASK")
+    fullbody_dir = Path("Xiang_Float_After_Tomorrow_Head_SPLITED_First_FullBody")
+
+    # 创建输出目录
+    premask_dir.mkdir(parents=True, exist_ok=True)
+    fullbody_dir.mkdir(parents=True, exist_ok=True)
+
+    # 初始化Gradio客户端
+    client = Client("http://localhost:7860/")
+
+    # 获取所有PNG文件并按自然排序
+    png_files = sorted(input_dir.glob("*.png"), key=lambda x: int(x.stem.split('_')[0]))
+
+    # 处理每个文件并显示进度条
+    for png_file in tqdm(png_files, desc="Processing images"):
+        try:
+            # 调用API处理文件
+            result = client.predict(
+                image=handle_file(str(png_file)),
+                width=1280,
+                height=720,
+                overlap_percentage=10,
+                num_inference_steps=30,
+                resize_option="25%",
+                prompt_input="A handsome slim man",
+                alignment="Top",
+                overlap_left=False,
+                overlap_right=False,
+                overlap_top=False,
+                overlap_bottom=False,
+                api_name="/infer"
+            )
+
+            # 获取输入文件名（不含扩展名）
+            base_name = png_file.stem
+
+            # 处理PreMASK输出（result[0]）
+            if result[0]:
+                webp_path = Path(result[0])
+                output_path = premask_dir / f"{base_name}.png"
+
+                # 转换WEBP为PNG并保存
+                with Image.open(webp_path) as img:
+                    img.save(output_path, "PNG")
+
+            # 处理FullBody输出（result[1]）
+            if result[1]:
+                webp_path = Path(result[1])
+                output_path = fullbody_dir / f"{base_name}.png"
+
+                # 转换WEBP为PNG并保存
+                with Image.open(webp_path) as img:
+                    img.save(output_path, "PNG")
+
+        except Exception as e:
+            print(f"\n处理文件 {png_file.name} 时出错: {e}")
+            continue
+
+if __name__ == "__main__":
+    process_images()
+    print("\n所有文件处理完成！")
+
+from PIL import Image, ImageDraw
+
+def create_image_with_resized_square(output_path, bg_width=1280, bg_height=720,
+                                   square_size=720, resize_percent=25):
+    """
+    创建白色背景图片并在顶部中间放置缩小后的黑色方块
+
+    参数:
+        output_path: 输出图片路径
+        bg_width: 背景宽度(默认1280)
+        bg_height: 背景高度(默认720)
+        square_size: 原始方块大小(默认512)
+        resize_percent: 缩小百分比(默认25)
+    """
+    # 创建白色背景图片
+    bg_color = (255, 255, 255)  # 白色
+    image = Image.new('RGB', (bg_width, bg_height), bg_color)
+
+    # 计算缩小后的方块尺寸
+    new_size = int(square_size * resize_percent / 100)
+
+    # 创建黑色方块
+    square_color = (0, 0, 0)  # 黑色
+    square = Image.new('RGB', (new_size, new_size), square_color)
+
+    # 计算放置位置（顶部中间）
+    position_x = (bg_width - new_size) // 2
+    position_y = 0  # 顶部
+
+    # 将方块粘贴到背景上
+    image.paste(square, (position_x, position_y))
+
+    # 保存图片
+    image.save(output_path)
+    print(f"图片已保存到: {output_path}")
+
+# 使用示例
+if __name__ == "__main__":
+    create_image_with_resized_square("output_image.png")
+
+from moviepy.editor import VideoFileClip, ImageClip, CompositeVideoClip
+from moviepy.video.fx.all import resize
+
+def place_video_on_scenery(video_path, scenery_image_path, output_path):
+    """
+    将视频调整为正方形大小后，放置在风景图片的指定 BBOX 位置（550, 0, 730, 180）
+
+    参数:
+        video_path: 输入视频路径
+        scenery_image_path: 背景风景图片路径
+        output_path: 输出视频路径
+    """
+    # 加载视频和背景图片
+    video = VideoFileClip(video_path)
+    scenery = ImageClip(scenery_image_path).set_duration(video.duration)
+
+    # 计算视频的目标尺寸（正方形，边长取视频的较短边）
+    min_dim = min(video.size)  # 取宽高中的较小值
+    square_video = video.fx(resize, width=min_dim, height=min_dim)
+
+    # 定义 BBOX 位置 (550, 0, 730, 180) -> 宽=180, 高=180
+    bbox_x, bbox_y, bbox_x_max, bbox_y_max = 550, 0, 730, 180
+    bbox_width = bbox_x_max - bbox_x
+    bbox_height = bbox_y_max - bbox_y
+
+    # 调整视频大小以匹配 BBOX 尺寸
+    square_video_resized = square_video.fx(resize, width=bbox_width, height=bbox_height)
+
+    # 设置视频在背景上的位置（左上角坐标）
+    square_video_resized = square_video_resized.set_position((bbox_x, bbox_y))
+
+    # 合成视频和背景
+    final_video = CompositeVideoClip([scenery, square_video_resized])
+
+    # 输出视频
+    final_video.write_videofile(output_path, codec="libx264", audio_codec="aac")
+    print(f"视频已保存到: {output_path}")
+
+# 使用示例
+place_video_on_scenery("Xiang_Float_After_Tomorrow_Head_SPLITED/0005_明天过后 - 张杰.mp4",
+                             "Xiang_Float_After_Tomorrow_Head_SPLITED_First_FullBody/0005_明天过后 - 张杰.png",
+                             "output.mp4")
+
