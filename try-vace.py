@@ -667,7 +667,7 @@ print(f"\n处理完成。共处理了 {len(processed_files)} 个文件，跳过�
 print(f"处理报告已保存到 video_processing_report.csv")
 print(f"详细日志保存在 processing_logs 目录")
 
-https://github.com/svjack/Practical-RIFE
+
 
 vim run_rmbg.py
 
@@ -1180,6 +1180,74 @@ python vace/vace_wan_inference.py --size "832*480" --prompt "夕阳西下的金�
 python vace/vace_wan_inference.py --size "832*480" --prompt "春日清晨的樱花林，镜头缓缓推进，粉白的花瓣随风飘舞，如同温柔的雪。晨雾轻柔地笼罩着树林，阳光透过花枝形成斑驳的光影。一条铺满落花的小径蜿蜒伸向远方，空气中仿佛弥漫着甜蜜的气息。画面风格唯美，色彩柔和。"
 python vace/vace_wan_inference.py --size "832*480" --prompt "秋日黄昏的枫叶谷，镜头缓缓摇过，漫山遍野的红叶在夕阳下如火般燃烧。一条清澈的小溪穿过山谷，水面上漂浮着红叶，倒映着绚丽的天空。微风拂过，树叶沙沙作响，整个场景充满诗意的浪漫。画面风格写实，色彩浓郁。"
 python vace/vace_wan_inference.py --size "832*480" --prompt "夏夜星空下的薰衣草田，镜头缓缓上升，紫色的花海在微风中轻轻摇曳，散发出淡淡的香气。银河横贯夜空，繁星点点，远处有萤火虫飞舞。月光温柔地洒在花田上，营造出梦幻般的氛围。画面风格浪漫，色调神秘。"
+python vace/vace_wan_inference.py --size "832*480" --prompt "冬日雪后的松树林，镜头缓缓推进，白雪覆盖的树枝在阳光下闪闪发光。远处山峰被晨雾笼罩，阳光透过云层形成神圣的光束。雪地上有动物留下的足迹，整个场景纯净而宁静。画面风格清新，色调冷冽中带着温暖。"
+python vace/vace_wan_inference.py --size "832*480" --prompt "雨季的江南水乡，镜头缓缓平移，细雨如丝般落下，在水面激起无数涟漪。古老的石桥倒映在水中，两岸白墙黛瓦的民居被雨水洗得发亮。柳枝轻拂水面，远处有乌篷船缓缓驶过。画面风格水墨意境，充满东方韵味。"
+python vace/vace_wan_inference.py --size "832*480" --prompt "清晨的向日葵田，镜头缓缓下降，金黄色的花朵齐刷刷地面向初升的太阳。露珠在花瓣上闪烁，微风吹过掀起层层花浪。远处地平线上朝阳刚刚升起，将天空染成橘红色。整个画面充满生机与希望。画面风格明亮欢快。"
+
+After_Tomorrow_SPLITED_Fix/0018_明天过后 - 张杰.mp3
+After_Tomorrow_SPLITED_Fix/0043_明天过后 - 张杰.mp3
+
+对下面的代码 当 音频为上面两个mp3 时 video 部分 使用的时 video
+最中间帧的静态图片而非视频
+
+from moviepy.editor import *
+import os
+
+# 定义文件夹路径
+mp3_folder = "After_Tomorrow_SPLITED_Fix"
+mp4_folder = "Xiang_Float_After_Tomorrow_Mix_SPLITED_VACE_OutPainting_videos"
+
+# 获取并排序mp3和mp4文件
+def get_sorted_files(folder, extension):
+    files = [f for f in os.listdir(folder) if f.endswith(extension)]
+    files.sort()  # 按字典序排序
+    return [os.path.join(folder, f) for f in files]
+
+mp3_files = get_sorted_files(mp3_folder, ".mp3")
+mp4_files = get_sorted_files(mp4_folder, ".mp4")
+
+# 确保文件数量匹配
+if len(mp3_files) != len(mp4_files):
+    raise ValueError(f"文件数量不匹配: {len(mp3_files)}个mp3 vs {len(mp4_files)}个mp4")
+
+# 处理每对(mp3, mp4)文件
+processed_clips = []
+for mp3_path, mp4_path in zip(mp3_files, mp4_files):
+    # 加载音频和视频
+    audio = AudioFileClip(mp3_path)
+    video = VideoFileClip(mp4_path).without_audio()
+
+    # 计算速度调整因子
+    speed_factor = video.duration / audio.duration
+
+    # 调整视频速度以匹配音频长度
+    if speed_factor != 1.0:
+        video = video.fx(vfx.speedx, speed_factor)
+
+    # 设置音频
+    video = video.set_audio(audio)
+
+    # 添加淡入淡出效果(1秒)
+    #video = video.crossfadein(0.1).crossfadeout(0.1)
+
+    processed_clips.append(video)
+
+# 合并所有视频片段
+final_video = concatenate_videoclips(processed_clips, method="compose")
+
+# 输出最终视频
+output_path = "final_output.mp4"
+final_video.write_videofile(output_path, codec="libx264", audio_codec="aac")
+
+print(f"视频处理完成，已保存到: {output_path}")
+
+https://github.com/svjack/Practical-RIFE
+
+python3 inference_video.py --multi=4 --video=final_output.mp4
+
+python3 inference_video.py --multi=8 --scale=2 --video=final_output.mp4
+
+python3 inference_video.py --multi=32 --scale=4 --video=final_output.mp4
 python vace/vace_wan_inference.py --size "832*480" --prompt "冬日雪后的松树林，镜头缓缓推进，白雪覆盖的树枝在阳光下闪闪发光。远处山峰被晨雾笼罩，阳光透过云层形成神圣的光束。雪地上有动物留下的足迹，整个场景纯净而宁静。画面风格清新，色调冷冽中带着温暖。"
 python vace/vace_wan_inference.py --size "832*480" --prompt "雨季的江南水乡，镜头缓缓平移，细雨如丝般落下，在水面激起无数涟漪。古老的石桥倒映在水中，两岸白墙黛瓦的民居被雨水洗得发亮。柳枝轻拂水面，远处有乌篷船缓缓驶过。画面风格水墨意境，充满东方韵味。"
 python vace/vace_wan_inference.py --size "832*480" --prompt "清晨的向日葵田，镜头缓缓下降，金黄色的花朵齐刷刷地面向初升的太阳。露珠在花瓣上闪烁，微风吹过掀起层层花浪。远处地平线上朝阳刚刚升起，将天空染成橘红色。整个画面充满生机与希望。画面风格明亮欢快。"
